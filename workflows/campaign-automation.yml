@@ -1,0 +1,47 @@
+# Campaign Automation Workflow
+#
+# Purpose: Automates the scheduling and dispatch of Mailchimp email campaigns.
+# Trigger:  API hook event "campaign.send" or "campaign.create"
+# Docs:     docs/api-hooks.md
+
+name: campaign-automation
+
+steps:
+
+  - id: validate-input
+    description: Validate that all required fields are present in the trigger payload.
+    action: validate
+    required_fields:
+      - campaignId
+      - listId
+
+  - id: fetch-campaign
+    description: Retrieve the campaign details from Mailchimp.
+    action: mailchimp.campaigns.get
+    params:
+      campaign_id: "{{ payload.campaignId }}"
+
+  - id: check-status
+    description: Confirm the campaign is in "save" status before scheduling.
+    action: assert
+    condition: "{{ steps.fetch-campaign.result.status == 'save' }}"
+    on_failure: abort
+    error_message: "Campaign {{ payload.campaignId }} is not in 'save' status and cannot be scheduled."
+
+  - id: schedule-campaign
+    description: Schedule the campaign for delivery.
+    action: mailchimp.campaigns.schedule
+    params:
+      campaign_id: "{{ payload.campaignId }}"
+      schedule_time: "{{ payload.scheduleTime | default: 'now' }}"
+
+  - id: notify
+    description: Log a success notification.
+    action: log
+    message: "Campaign {{ payload.campaignId }} successfully scheduled for {{ steps.schedule-campaign.result.schedule_time }}."
+
+on_error:
+  - id: log-error
+    action: log
+    level: error
+    message: "Campaign automation failed for campaignId={{ payload.campaignId }}: {{ error.message }}"

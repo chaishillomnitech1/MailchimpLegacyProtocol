@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audience-segment.json",
+  "title": "Audience Segment Template",
+  "description": "Reusable base template for Mailchimp audience segmentation rules. Copy and extend this file for each new segment.",
+  "type": "object",
+  "required": ["list_id", "name", "options"],
+  "properties": {
+    "list_id": {
+      "type": "string",
+      "description": "The unique ID of the Mailchimp audience (list) this segment belongs to.",
+      "example": "abc123def4"
+    },
+    "name": {
+      "type": "string",
+      "description": "A human-readable name for the segment.",
+      "example": "Active Customers - Last 90 Days"
+    },
+    "options": {
+      "type": "object",
+      "required": ["match", "conditions"],
+      "properties": {
+        "match": {
+          "type": "string",
+          "enum": ["any", "all"],
+          "default": "all",
+          "description": "Whether subscribers must match ANY or ALL of the conditions."
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Array of segmentation condition objects.",
+          "items": {
+            "type": "object",
+            "required": ["condition_type", "op", "field"],
+            "properties": {
+              "condition_type": {
+                "type": "string",
+                "description": "The type of condition (e.g., 'EmailAddress', 'Date', 'StaticSegment', 'Interests').",
+                "example": "Date"
+              },
+              "op": {
+                "type": "string",
+                "description": "The comparison operator (e.g., 'is', 'not', 'contains', 'greater', 'less', 'within').",
+                "example": "greater"
+              },
+              "field": {
+                "type": "string",
+                "description": "The subscriber field to evaluate (e.g., 'timestamp_opt', 'EMAIL', 'merge0').",
+                "example": "timestamp_opt"
+              },
+              "value": {
+                "description": "The value to compare against. Type depends on condition_type.",
+                "example": "90"
+              },
+              "extra": {
+                "description": "Additional parameter required by some condition types (e.g., unit for date ranges).",
+                "example": "day"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "example": {
+    "list_id": "abc123def4",
+    "name": "Active Customers - Last 90 Days",
+    "options": {
+      "match": "all",
+      "conditions": [
+        {
+          "condition_type": "Date",
+          "op": "greater",
+          "field": "timestamp_opt",
+          "value": "90",
+          "extra": "day"
+        },
+        {
+          "condition_type": "EmailAddress",
+          "op": "not_contains",
+          "field": "EMAIL",
+          "value": "unsubscribed"
+        }
+      ]
+    }
+  }
+}

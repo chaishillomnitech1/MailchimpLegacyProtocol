@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "email-campaign.json",
+  "title": "Email Campaign Template",
+  "description": "Reusable base template for Mailchimp email campaign configurations. Copy and extend this file for each new campaign.",
+  "type": "object",
+  "required": ["type", "settings", "recipients"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["regular", "plaintext", "absplit", "rss", "variate"],
+      "default": "regular",
+      "description": "The campaign type. See Mailchimp API docs for valid values."
+    },
+    "settings": {
+      "type": "object",
+      "required": ["subject_line", "from_name", "reply_to"],
+      "properties": {
+        "subject_line": {
+          "type": "string",
+          "description": "The subject line for the campaign email.",
+          "example": "Your Monthly Newsletter"
+        },
+        "preview_text": {
+          "type": "string",
+          "description": "Preview text that appears in inbox previews.",
+          "example": "Here's what's new this month..."
+        },
+        "title": {
+          "type": "string",
+          "description": "Internal campaign title (not visible to recipients).",
+          "example": "March 2026 Newsletter"
+        },
+        "from_name": {
+          "type": "string",
+          "description": "The 'From' name recipients will see.",
+          "example": "Your Brand Name"
+        },
+        "reply_to": {
+          "type": "string",
+          "format": "email",
+          "description": "The reply-to email address.",
+          "example": "hello@yourdomain.com"
+        },
+        "auto_footer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to automatically append the Mailchimp required footer."
+        },
+        "inline_css": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to inline CSS in the HTML content."
+        }
+      }
+    },
+    "recipients": {
+      "type": "object",
+      "required": ["list_id"],
+      "properties": {
+        "list_id": {
+          "type": "string",
+          "description": "The unique ID for the Mailchimp audience (list) to send to.",
+          "example": "abc123def4"
+        },
+        "segment_opts": {
+          "type": "object",
+          "description": "Optional segmentation conditions. Omit to send to the full list.",
+          "properties": {
+            "saved_segment_id": {
+              "type": "integer",
+              "description": "ID of a saved segment to use."
+            },
+            "match": {
+              "type": "string",
+              "enum": ["any", "all"],
+              "default": "all",
+              "description": "Whether to match any or all segment conditions."
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "description": "Array of segment condition objects."
+            }
+          }
+        }
+      }
+    },
+    "tracking": {
+      "type": "object",
+      "properties": {
+        "opens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Track open rates."
+        },
+        "html_clicks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Track clicks in HTML content."
+        },
+        "text_clicks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Track clicks in plaintext content."
+        }
+      }
+    }
+  },
+  "example": {
+    "type": "regular",
+    "settings": {
+      "subject_line": "Your Monthly Newsletter",
+      "preview_text": "Here's what's new this month...",
+      "title": "March 2026 Newsletter",
+      "from_name": "Your Brand Name",
+      "reply_to": "hello@yourdomain.com",
+      "auto_footer": true,
+      "inline_css": false
+    },
+    "recipients": {
+      "list_id": "abc123def4"
+    },
+    "tracking": {
+      "opens": true,
+      "html_clicks": true,
+      "text_clicks": false
+    }
+  }
+}
