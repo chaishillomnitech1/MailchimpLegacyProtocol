@@ -1,0 +1,67 @@
+# Subscriber Sync Workflow
+#
+# Purpose: Synchronizes subscriber lists between Mailchimp and external data sources.
+# Trigger:  API hook event "subscriber.sync"
+# Docs:     docs/api-hooks.md
+
+name: subscriber-sync
+
+steps:
+
+  - id: validate-input
+    description: Validate required fields are present in the trigger payload.
+    action: validate
+    required_fields:
+      - source
+      - listId
+
+  - id: fetch-external-subscribers
+    description: Retrieve subscriber data from the configured external source.
+    action: source.subscribers.list
+    params:
+      source: "{{ payload.source }}"
+
+  - id: fetch-mailchimp-subscribers
+    description: Retrieve the current subscriber list from Mailchimp.
+    action: mailchimp.lists.members.list
+    params:
+      list_id: "{{ payload.listId }}"
+      count: 1000
+
+  - id: compute-diff
+    description: Compute the delta between the external source and Mailchimp.
+    action: diff
+    external: "{{ steps.fetch-external-subscribers.result }}"
+    current:  "{{ steps.fetch-mailchimp-subscribers.result.members }}"
+    key_field: email_address
+
+  - id: apply-additions
+    description: Add new subscribers found in the external source but not in Mailchimp.
+    action: mailchimp.lists.members.batch-add
+    params:
+      list_id: "{{ payload.listId }}"
+      members: "{{ steps.compute-diff.result.additions }}"
+    skip_if: "{{ steps.compute-diff.result.additions | length == 0 }}"
+
+  - id: apply-removals
+    description: Unsubscribe members no longer present in the external source.
+    action: mailchimp.lists.members.batch-update
+    params:
+      list_id: "{{ payload.listId }}"
+      members: "{{ steps.compute-diff.result.removals }}"
+      status: unsubscribed
+    skip_if: "{{ steps.compute-diff.result.removals | length == 0 }}"
+
+  - id: notify
+    description: Log a summary of the synchronization.
+    action: log
+    message: >
+      Subscriber sync complete for list {{ payload.listId }}.
+      Added: {{ steps.compute-diff.result.additions | length }},
+      Removed: {{ steps.compute-diff.result.removals | length }}.
+
+on_error:
+  - id: log-error
+    action: log
+    level: error
+    message: "Subscriber sync failed for listId={{ payload.listId }}: {{ error.message }}"
